@@ -46,6 +46,8 @@ Zero-shot instance segmentation code is consisting of "Image Agnostic Segmentati
 
 In this code, Mask-RCNN trained by Anas Gouda et al. [1], and CLIP [2] is used as zero-shot classifier.
 
+I implemented Mask-RCNN with Detectron2 [3]
+
 <!----------------------------------------------------------------------------------------------------------------------
 #
 #   Example
@@ -109,3 +111,5 @@ Check the prediction result when input commpressed image.
 [1] https://github.com/AnasIbrahim/image_agnostic_segmentation
 
 [2] https://github.com/openai/CLIP
+
+[3] https://github.com/facebookresearch/detectron2
