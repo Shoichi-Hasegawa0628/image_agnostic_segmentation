@@ -65,6 +65,10 @@ This movie is a example of prediction result.
 ```shell
 # install detectron2 (Your CUDA must be 11.3)
 python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
+# download mask-rcnn checkpoint
+mkdir -p ./image_agnostic_segmentation_ros/models
+cd ./image_agnostic_segmentation_ros/models
+wget https://tu-dortmund.sciebo.de/s/ISdLcDMduHeW1ay/download  -O FAT_trained_Ml2R_bin_fine_tuned.pth
 # install CLIP
 pip install ftfy regex tqdm
 pip install git+https://github.com/openai/CLIP.git
