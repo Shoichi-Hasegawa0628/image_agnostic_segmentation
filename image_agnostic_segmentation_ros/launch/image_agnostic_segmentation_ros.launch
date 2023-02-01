@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<launch>
+
+    <arg name="is_autostart" default="true"/>
+    <arg name="frame_rate" default="10"/>
+
+    <arg name="is_publish_segmented_image" default="true"/>
+    <arg name="is_save_masked_image" default="true"/>
+
+
+
+    <arg name="model_path" default="$(find image_agnostic_segmentation_ros)/models/FAT_trained_Ml2R_bin_fine_tuned.pth"/>
+    <arg name="prompts_path" default="$(find image_agnostic_segmentation_ros)/prompts-config/prompts.txt"/>
+    <arg name="target_classes_path" default="$(find image_agnostic_segmentation_ros)/prompts-config/classes.txt"/>
+
+    <node pkg="image_agnostic_segmentation_ros" type="segment_image_node.py" name="segmentation_ros" output="screen">
+        <param name="is_autostart" value="$(arg is_autostart)"/>
+        <param name="frame_rate" value="$(arg frame_rate)"/>
+
+        <param name="is_publish_segmented_image" value="$(arg is_publish_segmented_image)"/>
+        <param name="is_save_masked_image" value="(arg is_save_masked_image)"/>
+
+        <param name="model_path" value="$(arg model_path)"/>
+        <param name="prompts_path" value="$(arg prompts_path)"/>
+        <param name="target_classes_path" value="$(arg target_classes_path)"/>
+
+        <remap from="/input/image" to="/hsrb/head_rgbd_sensor/rgb/image_rect_color"/>
+        <remap from="/output/image/compressed" to="/agnostic_segmentation/output/image/compressed"/>
+        <remap from="/output/masked_image" to="/agnostic_segmentation/output/masked_image"/>
+        <remap from="/output/original_image" to="/agnostic_segmentation/output/original_image"/>
+
+    </node>
+
+</launch>
