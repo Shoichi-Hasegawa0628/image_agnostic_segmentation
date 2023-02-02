@@ -102,6 +102,8 @@ Check for bugs in CLIP and Mask-RCNN code (on going)
 
 Check the prediction result when input commpressed image.
 
+Define ros msg to publish prediction result.
+
 <!----------------------------------------------------------------------------------------------------------------------
 #
 #   TODO
