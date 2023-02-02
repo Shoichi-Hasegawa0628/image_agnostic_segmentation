@@ -101,13 +101,18 @@ class AgnosticSegmentationNode:
         image = self._bridge.imgmsg_to_cv2(msg, desired_encoding="rgb8")
         predictions = self._model(image)
         np_batched_image = self._crop(image, predictions)
-        predict_class_labels = self._zero_shot_classify(np_batched_image)
-        predictions["instances"].pred_classes = predict_class_labels
-        segmented_image = agnostic_segmentation.draw_segmented_image(image, predictions, self._class_labels)
-        segmented_image = cv2.cvtColor(segmented_image, cv2.COLOR_BGR2RGB)
         
-        
-        self._publish_segmented_image(segmented_image)
+        if len(np_batched_image) >= 1:
+            predict_class_labels = self._zero_shot_classify(np_batched_image)
+            predictions["instances"].pred_classes = predict_class_labels
+            
+        if len(predictions["instances"].to("cpu")) > 0:
+            segmented_image = agnostic_segmentation.draw_segmented_image(image, predictions, self._class_labels)
+            segmented_image = cv2.cvtColor(segmented_image, cv2.COLOR_BGR2RGB)
+            self._publish_segmented_image(segmented_image)
+            
+        else: 
+            self._publish_segmented_image(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
         
         elapsed_time = time.time() - now_time
         rospy.loginfo("elapsed_time:{0}".format(elapsed_time) + "[sec]")
@@ -128,7 +133,6 @@ class AgnosticSegmentationNode:
         
     ## crop the region of interest ##
     def _crop(self, image: np.ndarray, predictions: dict) -> np.ndarray :
-        rospy.loginfo(self._save_dir)
         instances = predictions["instances"].to("cpu")
         np_batched_images = np.zeros((len(instances), 224, 224, 3)) # B, H, W, C
         for i in range(len(instances)) :
@@ -161,7 +165,6 @@ class AgnosticSegmentationNode:
         Returns:
             _type_: _description_
         """        
-        
         tensor_batched_image = torch.from_numpy(np_batched_image.astype(np.float32)) # B, H, W, C
         tensor_batched_image = tensor_batched_image.permute(0, 3, 1, 2) # (B, H, W, C) -> (B, C, H, W)
         tensor_batched_image = self._clip_preprocess(tensor_batched_image).to(AgnosticSegmentationNode.device)
@@ -174,11 +177,13 @@ class AgnosticSegmentationNode:
         image_features /= image_features.norm(dim=-1, keepdim=True)
         text_features /= text_features.norm(dim=-1, keepdim = True)
         similarity = (100.0 * image_features @ text_features.T).softmax(dim=-1)
-        value, index = similarity.topk(1)
-        
-        class_label_index = index.squeeze()
-        
+        value, class_label_index = similarity.topk(1)
+        if len(np_batched_image) > 1:
+            class_label_index = class_label_index.squeeze()
+        else: class_label_index = class_label_index[0]        
+
         #! debug
+        # rospy.loginfo(class_label_index)
         # rospy.loginfo(f"Shape input tensor: {tensor_batched_image.shape}")
         # rospy.loginfo(f"Normalized image features shape: {image_features.shape}")
         # rospy.loginfo(f"similarity value: {value} \n top1 indices: {index}")
@@ -203,8 +208,9 @@ class AgnosticSegmentationNode:
                 
         ## setting related to CLIP ##
         device = AgnosticSegmentationNode.device
-        model, preprocess = clip.load("ViT-B/32", device=device)
-        preprocess = transforms.Compose([transforms.CenterCrop(224), 
+        model, _ = clip.load("ViT-B/32", device=device)
+        preprocess = transforms.Compose([transforms.Resize(model.visual.input_resolution, interpolation=transforms.InterpolationMode.BICUBIC), 
+                                         transforms.CenterCrop(224), 
                                          transforms.Normalize((0.48145466, 0.4578275, 0.40821073), (0.26862954, 0.26130258, 0.27577711))])
         text = clip.tokenize(prompts)
         
